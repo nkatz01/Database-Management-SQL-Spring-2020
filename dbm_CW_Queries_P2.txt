@@ -1,0 +1,78 @@
+Q1 - Simply selects the required fields and orders first by catagory then by year.
+
+select title, catagory, year from book
+order by catagory asc, year desc
+
+Q2 - Uses a regex to check for a title that contains 'happy' in it.
+
+select title from book 
+WHERE catagory = 'Self-help' && title LIKE '%happy%' 
+
+Q3 - joins the tables but also on the condition that member.name == to Jane Doe.
+
+select   title from book, borrowed, member
+WHERE member.memberNo = borrowed.memberNo && book.isbn = borrowed.isbn && member.name  = 'Jane Doe'  
+
+Q4 - collapses by age and counts how many rows in each group.
+
+select age, count(*) 
+from member
+group by age
+
+Q5 - filters on titles that are prior than 1900 ('year' is assumed to be the year the book was originally first published and not the year when this edition was published).
+
+select title from book where year <1900
+
+Q6 - filters on those results that is not in the subquery. That would be a book that was never borrowed.
+
+select book.title from book where title not in(select  title from book join borrowed on borrowed.isbn = book.isbn)
+
+Q7 - returns the name of the member whoes row would  match the subquery that enquires for the minimum age of a member.
+
+select member.name from member where member.age in (select min(age) from member )
+
+Q8 - Finds the total number of books borrowed in 2019 by extracting the year part of the DATE field and counting all the results of the results
+
+select   count(borrowed.isbn) as books_borrowed_2019  from borrowed where extract(year from(borrowed_date))   = '2019'
+
+Q9 - Similar to question 3 but this time it puts the condition for the book.publisher field. 
+
+select member.name from borrowed, member, book where borrowed.memberNo = member.memberNo 
+&& book.isbn = borrowed.isbn && book.publisher = 'Atlantic Books'
+
+Q10 - Collpasing according to name and catagory and returning those groups that have more than 5 rows in them.
+
+select  catagory , member.name  
+from book, borrowed, member where book.isbn = borrowed.isbn && borrowed.memberNo = member.memberNo
+group by member.name, catagory
+having count(*) >5
+
+Q11 - Similar to question 9 and 3 but now that it has two such conditions, it makes use of a subquery.
+
+select  member.name  
+from book, borrowed, member where book.isbn = borrowed.isbn && borrowed.memberNo = member.memberNo
+&& book.catagory = 'Self-help' &&  member.name in ( select  member.name  
+from book, borrowed, member where book.isbn = borrowed.isbn && borrowed.memberNo = member.memberNo
+&& book.catagory = 'Gardening' )
+
+
+Q12 - Innermost query selects author and number of books they have written. The second level query selects the maximum value for the number of books written.
+The top level query then selects the author(s) whose number of books written is equal to the maximum number of books written.
+
+
+select book.author, count(book.author) 
+from book group by book.author
+	having count(book.author)=
+    (select max(most_prolific_author) 
+		from (select book.author, count(*) most_prolific_author from book
+		group by book.author ) 
+		book) 
+		 --  https://www.w3resource.com/sql/aggregate-functions/max-count.php
+
+Q13 - Collapsing on both, name and title and returning the names of those groups which had more than one row in them.
+
+select    member.name 
+from member, book, borrowed where book.isbn = borrowed.isbn && borrowed.memberNo = member.memberNo
+group by member.name, book.title
+having count(*)>1
+-- https://stackoverflow.com/questions/7411639/opposite-of-distinct-in-mysql
